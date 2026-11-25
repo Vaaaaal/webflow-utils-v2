@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>webflow-utils v2 — test loader</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 16px; line-height: 1.5; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    h2 { font-size: 1rem; margin: 0 0 .5rem; }
+    [wu-animate] { opacity: 0; }
+    .spacer { height: 60vh; }
+    #results li.ok::marker { content: '✅ '; } #results li.ko::marker { content: '❌ '; }
+    ul.is-check li::marker { content: '✓ '; }
+  </style>
+</head>
+<body>
+  <h1>Loader v2</h1>
+  <p>Une seule balise : <code>wu-combine wu-localize-date wu-list-variants wu-blockquote-author wu-ask-ai wu-obfuscate wu-obfuscate-onclick wu-anchor wu-animate</code> (+ <code>wu-typo</code> pour le warning). GSAP n'est pas chargé par la page : animate doit le récupérer seul.</p>
+
+  <ol id="results"></ol>
+
+  <!-- Preset ajouté via la file AVANT le chargement du loader -->
+  <script>
+    window.WebflowUtils = window.WebflowUtils || [];
+    window.WebflowUtils.push(['animate', function (api) {
+      api.presets['test-pop'] = function (o) {
+        return { from: { scale: 0.5 }, to: { scale: 1 }, duration: 0.3 };
+      };
+      window.__presetAddedBeforeInit = !document.querySelector('[wu-animate-applied]');
+    }]);
+  </script>
+
+  <section>
+    <h2>cms/combine</h2>
+    <div wu-combine="news" wu-combine-sort-type="number" wu-combine-sort-value wu-combine-limit="3" id="combine-target">
+      <div class="w-dyn-items">
+        <div class="w-dyn-item" wu-combine-sort-value="3">C (3)</div>
+        <div class="w-dyn-item" wu-combine-sort-value="1">A (1)</div>
+      </div>
+    </div>
+    <div wu-combine-source="news">
+      <div class="w-dyn-items">
+        <div class="w-dyn-item" wu-combine-sort-value="2">B (2)</div>
+        <div class="w-dyn-item" wu-combine-sort-value="4">D (4)</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>cms/localize-date</h2>
+    <span id="date" wu-localize-date="2026-03-14">March 14, 2026</span>
+  </section>
+
+  <section>
+    <h2>rich-text/list-variants + blockquote-author</h2>
+    <div wu-list-variants wu-blockquote-author>
+      <ul id="list"><li>// check Premier</li><li>Deuxième</li></ul>
+      <blockquote id="quote">Le design, c'est comment ça marche. /// Steve Jobs</blockquote>
+    </div>
+  </section>
+
+  <section>
+    <h2>ai/ask-ai</h2>
+    <a id="askai" href="#" wu-ask-ai="claude">Résumer avec Claude</a>
+  </section>
+
+  <section>
+    <h2>links</h2>
+    <span id="obf" wu-obfuscate="Y29udGFjdEBleGVtcGxlLmNvbQ==" wu-obfuscate-type="email" wu-obfuscate-rebuild>Email</span>
+    · <span id="obf-onclick" wu-obfuscate-onclick="/contact">Contact (onclick)</span>
+    · <a id="anchor" href="/services" wu-anchor="tarifs">Tarifs</a>
+  </section>
+
+  <div class="spacer"></div>
+  <section>
+    <h2>animation/animate</h2>
+    <div id="anim1" wu-animate="fade-up">fade-up</div>
+    <div id="anim2" wu-animate="test-pop">test-pop (preset custom via WebflowUtils.push)</div>
+  </section>
+
+  <script async type="module" src="/dist/wu.js"
+    wu-combine wu-localize-date wu-list-variants wu-blockquote-author wu-ask-ai
+    wu-obfuscate wu-obfuscate-onclick wu-anchor wu-animate wu-typo></script>
+
+  <script>
+    // Vérifications automatiques une fois tous les modules prêts.
+    var expected = ['combine','localizeDate','listVariants','blockquoteAuthor','askAi','obfuscate','obfuscateOnclick','anchor','animate'];
+    var ready = [];
+    document.addEventListener('wu:ready', function (e) {
+      ready.push(e.detail.key);
+      if (ready.length === expected.length) setTimeout(check, 50);
+    });
+    function report(label, ok) {
+      var li = document.createElement('li'); li.className = ok ? 'ok' : 'ko'; li.textContent = label;
+      document.getElementById('results').appendChild(li);
+    }
+    function check() {
+      var $ = function (s) { return document.querySelector(s); };
+      var loader = $('script[wu-loaded]');
+      report('tous les modules prêts : ' + ready.join(', '), expected.every(function (k) { return ready.indexOf(k) > -1; }));
+      report('attributs retirés du loader (wu-loaded="' + (loader && loader.getAttribute('wu-loaded')) + '")', loader && !loader.hasAttribute('wu-animate'));
+      report('combine : ordre A B C, limite 3', Array.from(document.querySelectorAll('#combine-target .w-dyn-item')).map(function (e) { return e.textContent[0]; }).join('') === 'ABC' && !$('[wu-combine-source]'));
+      report('localize-date : ' + $('#date').textContent, $('#date').textContent === '14 mars 2026');
+      report('list-variants : classe is-check', $('#list').classList.contains('is-check') && $('#list li').textContent === 'Premier');
+      report('blockquote-author : figcaption', !!$('figure figcaption') && $('figure figcaption').textContent === 'Steve Jobs');
+      report('ask-ai : href claude.ai', $('#askai').href.indexOf('https://claude.ai/new?q=') === 0);
+      report('obfuscate : mailto reconstruit', !!$('a[href="mailto:contact@exemple.com"]'));
+      report('obfuscate-onclick : role=link', $('#obf-onclick').getAttribute('role') === 'link');
+      report('anchor : ' + $('#anchor').getAttribute('href'), $('#anchor').getAttribute('href') === '/services#tarifs');
+      report('animate : GSAP chargé seul (' + (window.gsap && window.gsap.version) + ')', !!window.gsap && !!window.ScrollTrigger);
+      report('animate : preset ajouté avant init()', window.__presetAddedBeforeInit === true && 'test-pop' in WU.animate.presets);
+      report('API v1 conservée : WU.obfuscate.encode', WU.obfuscate.encode('contact@exemple.com') === 'Y29udGFjdEBleGVtcGxlLmNvbQ==');
+      document.title = 'DONE ' + document.querySelectorAll('#results .ko').length + ' KO';
+    }
+  </script>
+</body>
+</html>

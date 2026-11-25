@@ -1,0 +1,35 @@
+{
+  "name": "@vaaal/webflow-utils",
+  "version": "2.0.0-alpha.0",
+  "description": "Scripts Webflow pilotés par custom attributes (wu-*) — un seul loader, chargement des modules à la demande.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Valentin Cassus (https://vaaal.fr)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vaaaaal/webflow-utils-v2.git"
+  },
+  "keywords": ["webflow", "attributes", "gsap", "cms", "no-code"],
+  "exports": {
+    ".": "./src/index.js",
+    "./cms/*": "./src/modules/cms/*.js",
+    "./finsweet/*": "./src/modules/finsweet/*.js",
+    "./rich-text/*": "./src/modules/rich-text/*.js",
+    "./ai/*": "./src/modules/ai/*.js",
+    "./links/*": "./src/modules/links/*.js",
+    "./animation/*": "./src/modules/animation/*.js",
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "files": ["src", "dist", "snippets", "docs"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch",
+    "serve": "node scripts/serve.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
